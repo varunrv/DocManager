@@ -1,17 +1,36 @@
-# doc_manager
+# Document Manager
 
-A new Flutter project.
+A local-first Flutter app to store, find, share, and download documents for yourself and your family — available on Android, iOS, and Web.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Save documents for **Me** or any family member (name + relationship)
+- Add files from the file picker, gallery, or camera
+- Search and filter by person, category, or keyword
+- List and grid views
+- Preview images and PDFs in-app
+- Share via the native share sheet (mobile) or download (web)
+- Offline-first: all data stays on device
 
-A few resources to get you started if this is your first Flutter project:
+## Running the app
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+dart run build_runner build
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Building for web
+
+```bash
+flutter build web
+```
+
+## Tech stack
+
+- Flutter 3.x (Android, iOS, Web)
+- Riverpod (state management)
+- go_router (navigation)
+- Drift + SQLite (metadata)
+- IndexedDB (file storage on web)
+- pdfrx (PDF preview)
