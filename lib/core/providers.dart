@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'database/app_database.dart';
 import 'storage/file_store.dart';
 import '../features/categories/data/category_repository.dart';
 import '../features/documents/data/document_repository.dart';
 import '../features/people/data/person_repository.dart';
+import '../features/settings/data/settings_repository.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -27,4 +29,13 @@ final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
     ref.watch(appDatabaseProvider),
     ref.watch(fileStoreProvider),
   );
+});
+
+/// Must be overridden at app startup with an AsyncValue.guard call.
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('SharedPreferences not yet initialised');
+});
+
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  return SettingsRepository(ref.watch(sharedPreferencesProvider));
 });

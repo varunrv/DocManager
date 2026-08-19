@@ -14,6 +14,7 @@ import '../../../core/utils/mime_utils.dart';
 import '../../categories/presentation/categories_providers.dart';
 import '../../people/presentation/people_providers.dart';
 import '../../people/presentation/person_editor.dart';
+import '../../settings/presentation/lock_providers.dart';
 import '../domain/document.dart';
 
 class DocumentFormScreen extends ConsumerStatefulWidget {
@@ -87,8 +88,20 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
     super.dispose();
   }
 
+  Future<T> _runWithoutRelock<T>(Future<T> Function() action) async {
+    final suspendCount = ref.read(lockSuspendCountProvider);
+    ref.read(lockSuspendCountProvider.notifier).state = suspendCount + 1;
+    try {
+      return await action();
+    } finally {
+      final current = ref.read(lockSuspendCountProvider);
+      ref.read(lockSuspendCountProvider.notifier).state =
+          current > 0 ? current - 1 : 0;
+    }
+  }
+
   Future<void> _pickFile() async {
-    final file = await FilePicker.pickFile();
+    final file = await _runWithoutRelock(FilePicker.pickFile);
     if (file == null) return;
     try {
       final bytes = await file.readAsBytes();
@@ -103,14 +116,17 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final file = await ImagePicker().pickImage(source: source);
+    final file = await _runWithoutRelock(
+      () => ImagePicker().pickImage(source: source),
+    );
     if (file == null) return;
     final bytes = await file.readAsBytes();
-    _applyPickedFile(
-      file.name,
-      guessMimeType(file.name, file.mimeType),
-      bytes,
-    );
+    // file.mimeType is the most reliable source for camera/gallery images;
+    // fall back to guessing from the filename only if it is absent.
+    final mime = (file.mimeType?.isNotEmpty == true)
+        ? file.mimeType!
+        : guessMimeType(file.name, null);
+    _applyPickedFile(file.name, mime, bytes);
   }
 
   void _applyPickedFile(String name, String mime, Uint8List bytes) {
@@ -128,6 +144,61 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
     final created = await showPersonEditor(context);
     if (created != null) {
       setState(() => _personId = created.id);
+    }
+  }
+
+  Future<void> _maybeShowLockReminder() async {
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    final lockEnabled =
+        ref.read(appLockEnabledProvider) || settingsRepo.isAppLockEnabled;
+    if (lockEnabled) {
+      if (!settingsRepo.isDocReminderShown) {
+        await settingsRepo.markDocReminderShown();
+      }
+      return;
+    }
+    if (settingsRepo.isDocReminderShown || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final shouldEnable = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => _LockReminderDialog(
+            onEnable: () => Navigator.of(ctx).pop(true),
+            onSkip: () => Navigator.of(ctx).pop(false),
+          ),
+        ) ??
+        false;
+
+    await settingsRepo.markDocReminderShown();
+
+    if (!shouldEnable || !mounted) return;
+
+    final canAuth = await settingsRepo.canAuthenticate();
+    if (!mounted) return;
+    if (!canAuth) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('No screen lock set up on this device. '
+            'Add a PIN, pattern, or biometric in device settings first.'),
+      ));
+      return;
+    }
+
+    final success = await settingsRepo.authenticate();
+    if (!mounted) return;
+    if (success) {
+      await settingsRepo.setAppLockEnabled(true);
+      ref.read(appLockEnabledProvider.notifier).state = true;
+      ref.read(lockProvider.notifier).unlock();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('App lock enabled.')),
+      );
+    } else {
+      messenger.showSnackBar(const SnackBar(
+        content: Text(
+          'Authentication failed. You can enable lock in Settings anytime.',
+        ),
+      ));
     }
   }
 
@@ -169,6 +240,8 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
           context.go('/document/${_existing!.id}');
         }
       } else {
+        await _maybeShowLockReminder();
+        if (!mounted) return;
         final created = await repo.add(
           personId: _personId!,
           title: title,
@@ -395,6 +468,38 @@ class _FilePickerCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LockReminderDialog extends StatelessWidget {
+  const _LockReminderDialog({
+    required this.onEnable,
+    required this.onSkip,
+  });
+
+  final VoidCallback onEnable;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      icon: const Icon(Icons.shield_outlined, size: 40),
+      title: const Text('Protect your documents'),
+      content: const Text(
+        'You now have documents stored here. Enable App Lock to protect them with your device biometrics, PIN, or pattern.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: onSkip,
+          child: const Text('Skip'),
+        ),
+        FilledButton.icon(
+          onPressed: onEnable,
+          icon: const Icon(Icons.lock_outline),
+          label: const Text('Enable'),
+        ),
+      ],
     );
   }
 }

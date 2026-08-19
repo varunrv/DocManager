@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Use Face ID to unlock Document Manager and access your documents.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Take photos of documents to save them in Document Manager.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

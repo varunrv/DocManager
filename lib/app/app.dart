@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/settings/presentation/lock_providers.dart';
+import '../features/settings/presentation/lock_screen.dart';
 import 'router.dart';
 import 'theme.dart';
 
-class DocManagerApp extends StatelessWidget {
+class DocManagerApp extends ConsumerWidget {
   const DocManagerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isUnlocked = ref.watch(lockProvider);
+
     return MaterialApp.router(
       title: 'Document Manager',
       theme: buildAppTheme(),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        if (!isUnlocked) {
+          return Theme(
+            data: buildAppTheme(),
+            child: const LockScreen(),
+          );
+        }
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }
