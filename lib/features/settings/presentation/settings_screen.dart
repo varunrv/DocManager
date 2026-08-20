@@ -19,6 +19,7 @@ class SettingsScreen extends ConsumerWidget {
     final docs = ref.watch(allDocumentsProvider);
     final storage = ref.watch(storageBytesProvider);
     final lockEnabled = ref.watch(appLockEnabledProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -54,6 +55,49 @@ class SettingsScreen extends ConsumerWidget {
                 title: const Text('People'),
                 subtitle: Text(
                     '$peopleCount profile${peopleCount == 1 ? '' : 's'}'),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text('Appearance', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.brightness_auto_outlined),
+                      title: Text('Theme'),
+                      subtitle: Text('Default follows your phone setting.'),
+                    ),
+                    const SizedBox(height: 4),
+                    SegmentedButton<ThemeMode>(
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text('System'),
+                          icon: Icon(Icons.brightness_auto),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text('Light'),
+                          icon: Icon(Icons.light_mode_outlined),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text('Dark'),
+                          icon: Icon(Icons.dark_mode_outlined),
+                        ),
+                      ],
+                      selected: {themeMode},
+                      onSelectionChanged: (selected) {
+                        _setThemeMode(ref, selected.first);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -100,6 +144,11 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _setThemeMode(WidgetRef ref, ThemeMode mode) async {
+    await ref.read(settingsRepositoryProvider).setThemeMode(mode);
+    ref.read(themeModeProvider.notifier).state = mode;
   }
 
   Future<void> _toggleLock(

@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _kAppLockKey = 'app_lock_enabled';
 const _kDocReminderShownKey = 'doc_upload_reminder_shown';
+const _kThemeModeKey = 'theme_mode';
 
 class SettingsRepository {
   SettingsRepository(this._prefs);
@@ -19,6 +21,26 @@ class SettingsRepository {
       _prefs.getBool(_kDocReminderShownKey) ?? false;
   Future<void> markDocReminderShown() =>
       _prefs.setBool(_kDocReminderShownKey, true);
+
+  ThemeMode get themeMode {
+    switch (_prefs.getString(_kThemeModeKey)) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) {
+    final value = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+    return _prefs.setString(_kThemeModeKey, value);
+  }
 
   /// Returns true if the device can use biometric or device credential auth.
   Future<bool> canAuthenticate() async {

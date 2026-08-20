@@ -13,17 +13,20 @@ class DocManagerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isUnlocked = ref.watch(lockProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Document Manager',
       theme: buildAppTheme(),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
+      themeMode: themeMode,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         if (!isUnlocked) {
+          // Follow MaterialApp's resolved light/dark theme for the lock screen.
           return Theme(
-            data: buildAppTheme(),
+            data: Theme.of(context),
             child: const LockScreen(),
           );
         }

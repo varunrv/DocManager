@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
@@ -26,6 +27,10 @@ final lockProvider = NotifierProvider<LockNotifier, bool>(LockNotifier.new);
 /// Exposed so Settings screen can read and toggle without importing the repo.
 final appLockEnabledProvider = StateProvider<bool>((ref) {
   return ref.watch(settingsRepositoryProvider).isAppLockEnabled;
+});
+
+final themeModeProvider = StateProvider<ThemeMode>((ref) {
+  return ref.watch(settingsRepositoryProvider).themeMode;
 });
 
 /// Counts in-flight external platform flows like file pickers or camera apps.
