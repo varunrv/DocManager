@@ -41,7 +41,9 @@ class DocumentCard extends ConsumerWidget {
               ? Icons.picture_as_pdf_outlined
               : isImageMime(doc.mimeType)
                   ? Icons.image_outlined
-                  : Icons.insert_drive_file_outlined,
+                  : isPlainTextMime(doc.mimeType)
+                      ? Icons.notes_outlined
+                      : Icons.insert_drive_file_outlined,
           size: compact ? 36 : 28,
         ),
       );
@@ -131,7 +133,9 @@ class DocumentThumb extends StatelessWidget {
           ? Icons.picture_as_pdf_outlined
           : isImageMime(mimeType)
               ? Icons.image_outlined
-              : Icons.insert_drive_file_outlined,
+              : isPlainTextMime(mimeType)
+                  ? Icons.notes_outlined
+                  : Icons.insert_drive_file_outlined,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import '../../people/presentation/people_providers.dart';
 import '../../people/presentation/person_editor.dart';
 import '../../settings/presentation/lock_providers.dart';
 import '../domain/document.dart';
+import 'document_providers.dart';
 
 class DocumentFormScreen extends ConsumerStatefulWidget {
   const DocumentFormScreen({super.key, this.documentId});
@@ -28,6 +30,7 @@ class DocumentFormScreen extends ConsumerStatefulWidget {
 
 class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
   final _titleController = TextEditingController();
+  final _textController = TextEditingController();
   final _notesController = TextEditingController();
   final _tagsController = TextEditingController();
 
@@ -40,8 +43,10 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
   var _loading = true;
   var _saving = false;
   Document? _existing;
+  _DocumentInputMode _inputMode = _DocumentInputMode.file;
 
   bool get _isEditing => widget.documentId != null;
+  bool get _isTextMode => _inputMode == _DocumentInputMode.text;
 
   @override
   void initState() {
@@ -68,6 +73,14 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
         _expiresAt = existing.expiresAt;
         _fileName = existing.originalFileName;
         _mimeType = existing.mimeType;
+        _inputMode = isPlainTextMime(existing.mimeType)
+            ? _DocumentInputMode.text
+            : _DocumentInputMode.file;
+        if (_inputMode == _DocumentInputMode.text) {
+          final bytes =
+              await ref.read(documentRepositoryProvider).readFile(existing);
+          _textController.text = utf8.decode(bytes, allowMalformed: true);
+        }
       }
     }
 
@@ -83,6 +96,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
   @override
   void dispose() {
     _titleController.dispose();
+    _textController.dispose();
     _notesController.dispose();
     _tagsController.dispose();
     super.dispose();
@@ -131,12 +145,22 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
 
   void _applyPickedFile(String name, String mime, Uint8List bytes) {
     setState(() {
+      _inputMode = _DocumentInputMode.file;
       _fileName = name;
       _mimeType = mime;
       _bytes = bytes;
       if (_titleController.text.trim().isEmpty) {
         _titleController.text = titleFromFileName(name);
       }
+    });
+  }
+
+  void _switchToTextMode() {
+    setState(() {
+      _inputMode = _DocumentInputMode.text;
+      _fileName = null;
+      _mimeType = 'text/plain';
+      _bytes = null;
     });
   }
 
@@ -212,10 +236,22 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
       showAppMessage(context, 'Enter a title.');
       return;
     }
-    if (!_isEditing && _bytes == null) {
+    if (_isTextMode && _textController.text.trim().isEmpty) {
+      showAppMessage(context, 'Enter some text to save.');
+      return;
+    }
+    if (!_isTextMode && !_isEditing && _bytes == null) {
       showAppMessage(context, 'Attach a file first.');
       return;
     }
+
+    final textBytes = _isTextMode
+        ? Uint8List.fromList(utf8.encode(_textController.text))
+        : null;
+    final saveBytes = _isTextMode ? textBytes : _bytes;
+    final saveMimeType = _isTextMode ? 'text/plain' : _mimeType;
+    final saveFileName =
+        _isTextMode ? _textFileName(title) : _fileName;
 
     setState(() => _saving = true);
     final repo = ref.read(documentRepositoryProvider);
@@ -229,11 +265,14 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
           tags: parseTags(_tagsController.text),
           notes: _notesController.text,
           expiresAt: _expiresAt,
-          originalFileName: _bytes != null ? _fileName : null,
-          mimeType: _bytes != null ? _mimeType : null,
-          bytes: _bytes,
+          originalFileName: saveBytes != null ? saveFileName : null,
+          mimeType: saveBytes != null ? saveMimeType : null,
+          bytes: saveBytes,
         );
         if (!mounted) return;
+        ref.invalidate(documentItemProvider(_existing!.id));
+        ref.invalidate(documentBytesProvider(_existing!.id));
+        ref.invalidate(storageBytesProvider);
         if (context.canPop()) {
           context.pop();
         } else {
@@ -248,12 +287,15 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
           categoryId: _categoryId!,
           tags: parseTags(_tagsController.text),
           notes: _notesController.text,
-          originalFileName: _fileName!,
-          mimeType: _mimeType ?? 'application/octet-stream',
-          bytes: _bytes!,
+          originalFileName: saveFileName!,
+          mimeType: saveMimeType ?? 'application/octet-stream',
+          bytes: saveBytes!,
           expiresAt: _expiresAt,
         );
         if (!mounted) return;
+        ref.invalidate(documentItemProvider(created.id));
+        ref.invalidate(documentBytesProvider(created.id));
+        ref.invalidate(storageBytesProvider);
         context.pushReplacement('/document/${created.id}');
       }
     } on AppException catch (error) {
@@ -315,6 +357,7 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                   ),
                   const SizedBox(height: 8),
                   _FilePickerCard(
+                    isTextMode: _isTextMode,
                     fileName: _fileName,
                     mimeType: _mimeType,
                     size: _bytes?.length ?? _existing?.sizeBytes,
@@ -323,6 +366,8 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                     onPickCamera: kIsWeb
                         ? null
                         : () => _pickImage(ImageSource.camera),
+                    onTypeText: _switchToTextMode,
+                    textLength: _textController.text.trim().length,
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -354,6 +399,20 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (_isTextMode) ...[
+                    TextField(
+                      controller: _textController,
+                      onChanged: (_) => setState(() {}),
+                      minLines: 8,
+                      maxLines: 16,
+                      decoration: const InputDecoration(
+                        labelText: 'Text content',
+                        alignLabelWithHint: true,
+                        hintText: 'Type anything you want to save here',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   TextField(
                     controller: _notesController,
                     minLines: 3,
@@ -410,24 +469,42 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             ),
     );
   }
+
+  String _textFileName(String title) {
+    final base = title.trim().isEmpty ? 'note' : title.trim();
+    final sanitized = base
+        .replaceAll(RegExp(r'[\\/:*?"<>|]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final fileBase = sanitized.isEmpty ? 'note' : sanitized;
+    return fileBase.toLowerCase().endsWith('.txt')
+        ? fileBase
+        : '$fileBase.txt';
+  }
 }
 
 class _FilePickerCard extends StatelessWidget {
   const _FilePickerCard({
+    required this.isTextMode,
     required this.fileName,
     required this.mimeType,
     required this.size,
     required this.onPickFile,
     required this.onPickGallery,
     required this.onPickCamera,
+    required this.onTypeText,
+    required this.textLength,
   });
 
+  final bool isTextMode;
   final String? fileName;
   final String? mimeType;
   final int? size;
   final VoidCallback onPickFile;
   final VoidCallback onPickGallery;
   final VoidCallback? onPickCamera;
+  final VoidCallback onTypeText;
+  final int textLength;
 
   @override
   Widget build(BuildContext context) {
@@ -438,15 +515,22 @@ class _FilePickerCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              fileName == null
-                  ? 'No file attached'
-                  : '$fileName${size == null ? '' : ' · ${formatBytes(size!)}'}',
+              isTextMode
+                  ? 'Text note${textLength == 0 ? '' : ' · $textLength characters'}'
+                  : fileName == null
+                      ? 'No file attached'
+                      : '$fileName${size == null ? '' : ' · ${formatBytes(size!)}'}',
             ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
+                FilledButton.tonalIcon(
+                  onPressed: onTypeText,
+                  icon: const Icon(Icons.notes_outlined),
+                  label: const Text('Type text'),
+                ),
                 FilledButton.tonalIcon(
                   onPressed: onPickFile,
                   icon: const Icon(Icons.attach_file),
@@ -471,6 +555,8 @@ class _FilePickerCard extends StatelessWidget {
     );
   }
 }
+
+enum _DocumentInputMode { file, text }
 
 class _LockReminderDialog extends StatelessWidget {
   const _LockReminderDialog({

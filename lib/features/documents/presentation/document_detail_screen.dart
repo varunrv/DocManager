@@ -43,7 +43,7 @@ class DocumentDetailScreen extends ConsumerWidget {
             body: const Center(child: Text('Document not found.')),
           );
         }
-        final bytesAsync = ref.watch(documentBytesProvider(data.document));
+        final bytesAsync = ref.watch(documentBytesProvider(data.document.id));
         return Scaffold(
           appBar: AppBar(
             leading: _homeBackButton(context),
@@ -61,7 +61,8 @@ class DocumentDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          body: ConstrainedPageBody(
+          body: SafeArea(
+            child: ConstrainedPageBody(
             child: Column(
               children: [
                 Expanded(
@@ -150,6 +151,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

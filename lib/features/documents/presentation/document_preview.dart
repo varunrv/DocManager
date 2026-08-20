@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,16 @@ class DocumentPreview extends StatelessWidget {
       return PdfViewer.data(
         bytes,
         sourceName: sourceName,
+      );
+    }
+    if (isTextMime(mimeType)) {
+      final text = utf8.decode(bytes, allowMalformed: true);
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: SelectableText(
+          text,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.5),
+        ),
       );
     }
     return Center(
