@@ -16,11 +16,17 @@ class DocumentCard extends ConsumerWidget {
     required this.item,
     required this.compact,
     required this.onTap,
+    this.onLongPress,
+    this.selectionMode = false,
+    this.selected = false,
   });
 
   final DocumentListItem item;
   final bool compact;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool selectionMode;
+  final bool selected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,6 +34,7 @@ class DocumentCard extends ConsumerWidget {
     final thumb = doc.thumbnailKey == null
         ? null
         : ref.watch(thumbnailBytesProvider(doc.thumbnailKey!));
+    final scheme = Theme.of(context).colorScheme;
 
     Widget preview() {
       final bytes = thumb?.valueOrNull;
@@ -35,7 +42,7 @@ class DocumentCard extends ConsumerWidget {
         return Image.memory(bytes, fit: BoxFit.cover);
       }
       return ColoredBox(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: scheme.surfaceContainerHighest,
         child: Icon(
           isPdfMime(doc.mimeType)
               ? Icons.picture_as_pdf_outlined
@@ -49,36 +56,66 @@ class DocumentCard extends ConsumerWidget {
       );
     }
 
+    Widget selectionBadge() {
+      return Positioned(
+        top: 8,
+        right: 8,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected ? scheme.primary : scheme.surface.withValues(alpha: 0.85),
+            border: Border.all(
+              color: selected ? scheme.primary : scheme.outline,
+              width: 2,
+            ),
+          ),
+          child: selected
+              ? Icon(Icons.check, size: 16, color: scheme.onPrimary)
+              : null,
+        ),
+      );
+    }
+
     if (compact) {
       return Card(
         clipBehavior: Clip.antiAlias,
+        color: selected ? scheme.primaryContainer.withValues(alpha: 0.45) : null,
         child: InkWell(
           onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          onLongPress: onLongPress,
+          child: Stack(
             children: [
-              Expanded(child: preview()),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      doc.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: preview()),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          doc.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.person.ownerLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.person.ownerLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (selectionMode) selectionBadge(),
             ],
           ),
         ),
@@ -86,12 +123,19 @@ class DocumentCard extends ConsumerWidget {
     }
 
     return Card(
+      color: selected ? scheme.primaryContainer.withValues(alpha: 0.45) : null,
       child: ListTile(
         onTap: onTap,
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(width: 48, height: 48, child: preview()),
-        ),
+        onLongPress: onLongPress,
+        leading: selectionMode
+            ? Icon(
+                selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: selected ? scheme.primary : scheme.outline,
+              )
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(width: 48, height: 48, child: preview()),
+              ),
         title: Text(doc.title),
         subtitle: Text(
           '${item.person.ownerLabel} · ${item.category.name} · ${formatBytes(doc.sizeBytes)}',

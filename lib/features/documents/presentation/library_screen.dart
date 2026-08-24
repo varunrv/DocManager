@@ -1,10 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/app.dart';
 import '../../../app/widgets/constrained_page_body.dart';
+import '../../../core/providers.dart';
 import '../../categories/presentation/categories_providers.dart';
 import '../../people/presentation/people_providers.dart';
+import '../../settings/presentation/lock_providers.dart';
+import '../domain/document.dart';
+import '../domain/document_list_item.dart';
+import 'document_actions.dart';
 import 'document_providers.dart';
 import 'widgets/document_card.dart';
 
@@ -17,11 +24,101 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   final _searchController = TextEditingController();
+  final _selectedIds = <String>{};
+  var _selectionMode = false;
+  var _sharing = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _enterSelection(String documentId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds
+        ..clear()
+        ..add(documentId);
+    });
+  }
+
+  void _exitSelection() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelected(String documentId) {
+    setState(() {
+      if (_selectedIds.contains(documentId)) {
+        _selectedIds.remove(documentId);
+        if (_selectedIds.isEmpty) {
+          _selectionMode = false;
+        }
+      } else {
+        _selectedIds.add(documentId);
+      }
+    });
+  }
+
+  void _onDocumentTap(DocumentListItem item) {
+    final id = item.document.id;
+    if (_selectionMode) {
+      _toggleSelected(id);
+      return;
+    }
+    context.push('/document/$id');
+  }
+
+  Future<void> _shareSelected(List<DocumentListItem> items) async {
+    if (_selectedIds.isEmpty || _sharing) return;
+
+    final selected = items
+        .where((item) => _selectedIds.contains(item.document.id))
+        .map((item) => item.document)
+        .toList();
+    if (selected.isEmpty) return;
+
+    setState(() => _sharing = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(documentRepositoryProvider);
+    final suspendCount = ref.read(lockSuspendCountProvider);
+    ref.read(lockSuspendCountProvider.notifier).state = suspendCount + 1;
+
+    try {
+      final files = <(Document, Uint8List)>[];
+      for (final document in selected) {
+        final bytes = await repo.readFile(document);
+        files.add((document, bytes));
+      }
+
+      await shareDocuments(files);
+      if (!mounted) return;
+      _exitSelection();
+      if (kIsWeb) {
+        showAppMessage(
+          context,
+          files.length == 1
+              ? 'Download started.'
+              : 'Downloads started for ${files.length} documents.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Could not share the selected documents.'),
+          ),
+        );
+      }
+    } finally {
+      final current = ref.read(lockSuspendCountProvider);
+      ref.read(lockSuspendCountProvider.notifier).state =
+          current > 0 ? current - 1 : 0;
+      if (mounted) setState(() => _sharing = false);
+    }
   }
 
   @override
@@ -38,57 +135,106 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       );
     }
 
+    final items = documents.valueOrNull ?? const <DocumentListItem>[];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Document Manager'),
+        leading: _selectionMode
+            ? IconButton(
+                tooltip: 'Cancel',
+                onPressed: _sharing ? null : _exitSelection,
+                icon: const Icon(Icons.close),
+              )
+            : null,
+        title: Text(
+          _selectionMode
+              ? '${_selectedIds.length} selected'
+              : 'Document Manager',
+        ),
         actions: [
-          IconButton(
-            tooltip: filter.gridView ? 'List view' : 'Grid view',
-            onPressed: () => ref.read(libraryFilterProvider.notifier).toggleView(),
-            icon: Icon(filter.gridView ? Icons.view_list : Icons.grid_view),
-          ),
+          if (_selectionMode) ...[
+            IconButton(
+              tooltip: kIsWeb ? 'Download' : 'Share',
+              onPressed: _selectedIds.isEmpty || _sharing
+                  ? null
+                  : () => _shareSelected(items),
+              icon: _sharing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(kIsWeb ? Icons.download : Icons.ios_share),
+            ),
+          ] else
+            IconButton(
+              tooltip: filter.gridView ? 'List view' : 'Grid view',
+              onPressed: () =>
+                  ref.read(libraryFilterProvider.notifier).toggleView(),
+              icon: Icon(filter.gridView ? Icons.view_list : Icons.grid_view),
+            ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/add'),
-        icon: const Icon(Icons.add),
-        label: const Text('Add document'),
-      ),
+      floatingActionButton: _selectionMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => context.push('/add'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add document'),
+            ),
       body: ConstrainedPageBody(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  hintText: 'Search title, tags, notes, or person',
+            if (!_selectionMode) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Search title, tags, notes, or person',
+                  ),
+                  onChanged: (value) =>
+                      ref.read(libraryFilterProvider.notifier).setQuery(value),
                 ),
-                onChanged: (value) =>
-                    ref.read(libraryFilterProvider.notifier).setQuery(value),
               ),
-            ),
-            const SizedBox(height: 8),
-            _FilterRow(
-              selectedId: filter.personId,
-              allLabel: 'All',
-              items: [
-                for (final person in people)
-                  (person.id, person.isSelf ? person.displayName : person.ownerLabel),
-              ],
-              onSelected: (id) =>
-                  ref.read(libraryFilterProvider.notifier).setPerson(id),
-            ),
-            _FilterRow(
-              selectedId: filter.categoryId,
-              allLabel: 'All',
-              items: [
-                for (final category in categories) (category.id, category.name),
-              ],
-              onSelected: (id) =>
-                  ref.read(libraryFilterProvider.notifier).setCategory(id),
-            ),
+              const SizedBox(height: 8),
+              _FilterRow(
+                selectedId: filter.personId,
+                allLabel: 'All',
+                items: [
+                  for (final person in people)
+                    (
+                      person.id,
+                      person.isSelf ? person.displayName : person.ownerLabel
+                    ),
+                ],
+                onSelected: (id) =>
+                    ref.read(libraryFilterProvider.notifier).setPerson(id),
+              ),
+              _FilterRow(
+                selectedId: filter.categoryId,
+                allLabel: 'All',
+                items: [
+                  for (final category in categories)
+                    (category.id, category.name),
+                ],
+                onSelected: (id) =>
+                    ref.read(libraryFilterProvider.notifier).setCategory(id),
+              ),
+            ] else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Tap documents to select, then ${kIsWeb ? 'download' : 'share'} them together.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ),
             Expanded(
               child: documents.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -110,10 +256,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       itemCount: items.length,
                       itemBuilder: (context, index) {
                         final item = items[index];
+                        final id = item.document.id;
                         return DocumentCard(
                           item: item,
                           compact: true,
-                          onTap: () => context.push('/document/${item.document.id}'),
+                          selectionMode: _selectionMode,
+                          selected: _selectedIds.contains(id),
+                          onTap: () => _onDocumentTap(item),
+                          onLongPress: () => _enterSelection(id),
                         );
                       },
                     );
@@ -124,10 +274,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final item = items[index];
+                      final id = item.document.id;
                       return DocumentCard(
                         item: item,
                         compact: false,
-                        onTap: () => context.push('/document/${item.document.id}'),
+                        selectionMode: _selectionMode,
+                        selected: _selectedIds.contains(id),
+                        onTap: () => _onDocumentTap(item),
+                        onLongPress: () => _enterSelection(id),
                       );
                     },
                   );
