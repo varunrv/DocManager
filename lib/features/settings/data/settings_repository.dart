@@ -54,7 +54,7 @@ class SettingsRepository {
   Future<bool> authenticate() async {
     try {
       return await _auth.authenticate(
-        localizedReason: 'Unlock Document Manager to access your documents.',
+        localizedReason: 'Unlock Docket to access your documents.',
         biometricOnly: false,
         persistAcrossBackgrounding: true,
       );

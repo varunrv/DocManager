@@ -1,6 +1,6 @@
 {
-    "name": "Document Manager",
-    "short_name": "Docs",
+    "name": "Docket",
+    "short_name": "Docket",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0F766E",

@@ -14,7 +14,7 @@
         android:maxSdkVersion="29"
         tools:replace="android:maxSdkVersion" />
     <application
-        android:label="Document Manager"
+        android:label="Docket"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

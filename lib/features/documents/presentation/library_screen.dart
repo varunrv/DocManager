@@ -149,7 +149,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         title: Text(
           _selectionMode
               ? '${_selectedIds.length} selected'
-              : 'Document Manager',
+              : 'Docket',
         ),
         actions: [
           if (_selectionMode) ...[

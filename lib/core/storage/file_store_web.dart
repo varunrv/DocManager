@@ -8,7 +8,7 @@ import 'file_store.dart';
 FileStore createFileStoreImpl() => WebFileStore();
 
 class WebFileStore implements FileStore {
-  static const _dbName = 'doc_manager_files';
+  static const _dbName = 'docket_files';
   static const _storeName = 'blobs';
 
   Database? _db;

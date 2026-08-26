@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Document Manager</string>
+	<string>Docket</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>doc_manager</string>
+	<string>Docket</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -25,11 +25,11 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Use Face ID to unlock Document Manager and access your documents.</string>
+	<string>Use Face ID to unlock Docket and access your documents.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Take photos of documents to save them in Document Manager.</string>
+	<string>Take photos of documents to save them in Docket.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose photos of documents to save them in Document Manager.</string>
+	<string>Choose photos of documents to save them in Docket.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save downloaded documents to your photo library when needed.</string>
 	<key>LSRequiresIPhoneOS</key>

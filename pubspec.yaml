@@ -1,4 +1,4 @@
-name: doc_manager
+name: docket
 description: "Local-first document vault for you and your family."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

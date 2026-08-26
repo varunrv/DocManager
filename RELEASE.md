@@ -50,7 +50,7 @@ Upload this file in [Google Play Console](https://play.google.com/console):
 build/app/outputs/bundle/release/app-release.aab
 ```
 
-**Package name (fixed after first publish):** `com.docmanager.doc_manager`
+**Package name (fixed after first publish):** `com.varun.docket`
 
 If `key.properties` is missing, release builds fall back to debug signing (fine for local testing, **not** for Play Store upload).
 
@@ -61,7 +61,7 @@ If `key.properties` is missing, release builds fall back to debug signing (fine 
 ### One-time setup
 
 1. Enroll in the [Apple Developer Program](https://developer.apple.com/programs/).
-2. Create an app in [App Store Connect](https://appstoreconnect.apple.com) with bundle ID **`com.docmanager.docManager`**.
+2. Create an app in [App Store Connect](https://appstoreconnect.apple.com) with bundle ID **`com.varun.docket`**.
 3. Open the project in Xcode and confirm signing:
 
    ```bash

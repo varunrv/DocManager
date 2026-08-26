@@ -1,4 +1,4 @@
-# Document Manager
+# Docket
 
 A local-first Flutter app to store, find, share, and download documents for yourself and your family — available on Android, iOS, and Web.
 

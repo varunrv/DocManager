@@ -1,4 +1,4 @@
-package com.docmanager.doc_manager
+package com.varun.docket
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

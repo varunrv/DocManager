@@ -1,5 +1,5 @@
-import 'package:doc_manager/core/utils/formatters.dart';
-import 'package:doc_manager/features/people/domain/person.dart';
+import 'package:docket/core/utils/formatters.dart';
+import 'package:docket/features/people/domain/person.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -132,7 +132,7 @@ class SettingsScreen extends ConsumerWidget {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.info_outline),
-                title: const Text('Document Manager'),
+                title: const Text('Docket'),
                 subtitle: Text(
                   kIsWeb
                       ? 'Files are stored in this browser. Clearing site data deletes the vault.'

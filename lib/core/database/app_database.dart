@@ -60,7 +60,7 @@ class Documents extends Table {
 @DriftDatabase(tables: [People, Categories, Documents])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(executor ?? driftDatabase(name: 'doc_manager'));
+      : super(executor ?? driftDatabase(name: 'docket'));
 
   @override
   int get schemaVersion => 1;
