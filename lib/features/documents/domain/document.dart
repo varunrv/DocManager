@@ -12,6 +12,7 @@ class Document {
     required this.storageKey,
     this.thumbnailKey,
     this.expiresAt,
+    this.reminderEnabled = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -28,6 +29,7 @@ class Document {
   final String storageKey;
   final String? thumbnailKey;
   final DateTime? expiresAt;
+  final bool reminderEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
 }

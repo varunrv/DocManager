@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/backup/presentation/export_backup_screen.dart';
+import '../features/backup/presentation/import_backup_screen.dart';
 import '../features/categories/presentation/categories_screen.dart';
 import '../features/documents/presentation/document_detail_screen.dart';
 import '../features/documents/presentation/document_form_screen.dart';
+import '../features/documents/presentation/expiry_screen.dart';
 import '../features/documents/presentation/library_screen.dart';
 import '../features/people/presentation/people_screen.dart';
+import '../features/settings/presentation/about_screen.dart';
+import '../features/settings/presentation/privacy_policy_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 
 final appRouter = GoRouter(
@@ -21,6 +26,14 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/',
               builder: (context, state) => const LibraryScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/expiry',
+              builder: (context, state) => const ExpiryScreen(),
             ),
           ],
         ),
@@ -51,8 +64,26 @@ final appRouter = GoRouter(
       ],
     ),
     GoRoute(
+      path: '/settings/export-backup',
+      builder: (context, state) => const ExportBackupScreen(),
+    ),
+    GoRoute(
+      path: '/settings/import-backup',
+      builder: (context, state) => const ImportBackupScreen(),
+    ),
+    GoRoute(
+      path: '/settings/about',
+      builder: (context, state) => const AboutScreen(),
+    ),
+    GoRoute(
+      path: '/settings/privacy',
+      builder: (context, state) => const PrivacyPolicyScreen(),
+    ),
+    GoRoute(
       path: '/add',
-      builder: (context, state) => const DocumentFormScreen(),
+      builder: (context, state) => DocumentFormScreen(
+        templateId: state.uri.queryParameters['template'],
+      ),
     ),
     GoRoute(
       path: '/document/:id',
@@ -95,6 +126,11 @@ class AppShell extends StatelessWidget {
             icon: Icon(Icons.folder_outlined),
             selectedIcon: Icon(Icons.folder),
             label: 'Library',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.event_outlined),
+            selectedIcon: Icon(Icons.event),
+            label: 'Expiry',
           ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),

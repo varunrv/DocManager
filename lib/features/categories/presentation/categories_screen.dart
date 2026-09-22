@@ -85,7 +85,7 @@ class _CategoryTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = (ref.watch(allDocumentsProvider).valueOrNull ?? const [])
+    final count = (ref.watch(allDocumentsProvider).value ?? const [])
         .where((item) => item.document.categoryId == category.id)
         .length;
     return Card(

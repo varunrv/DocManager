@@ -43,7 +43,7 @@ class DocumentDetailScreen extends ConsumerWidget {
             body: const Center(child: Text('Document not found.')),
           );
         }
-        final bytesAsync = ref.watch(documentBytesProvider(data.document));
+        final bytesAsync = ref.watch(documentBytesProvider(data.document.id));
         return Scaffold(
           appBar: AppBar(
             leading: _homeBackButton(context),
@@ -61,7 +61,8 @@ class DocumentDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          body: ConstrainedPageBody(
+          body: SafeArea(
+            child: ConstrainedPageBody(
             child: Column(
               children: [
                 Expanded(
@@ -109,11 +110,11 @@ class DocumentDetailScreen extends ConsumerWidget {
                           if (!kIsWeb)
                             Expanded(
                               child: FilledButton.icon(
-                                onPressed: bytesAsync.valueOrNull == null
+                                onPressed: bytesAsync.value == null
                                     ? null
                                     : () => shareDocument(
                                           data.document,
-                                          bytesAsync.valueOrNull!,
+                                          bytesAsync.value!,
                                         ),
                                 icon: const Icon(Icons.ios_share),
                                 label: const Text('Share'),
@@ -123,21 +124,21 @@ class DocumentDetailScreen extends ConsumerWidget {
                           Expanded(
                             child: kIsWeb
                                 ? FilledButton.icon(
-                                    onPressed: bytesAsync.valueOrNull == null
+                                    onPressed: bytesAsync.value == null
                                         ? null
                                         : () => downloadDocument(
                                               data.document,
-                                              bytesAsync.valueOrNull!,
+                                              bytesAsync.value!,
                                             ),
                                     icon: const Icon(Icons.download),
                                     label: const Text('Download'),
                                   )
                                 : OutlinedButton.icon(
-                                    onPressed: bytesAsync.valueOrNull == null
+                                    onPressed: bytesAsync.value == null
                                         ? null
                                         : () => downloadDocument(
                                               data.document,
-                                              bytesAsync.valueOrNull!,
+                                              bytesAsync.value!,
                                             ),
                                     icon: const Icon(Icons.download),
                                     label: const Text('Download'),
@@ -150,6 +151,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

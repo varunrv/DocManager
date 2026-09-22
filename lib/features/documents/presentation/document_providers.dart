@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
-import '../domain/document.dart';
 import '../domain/document_list_item.dart';
 
 @immutable
@@ -89,9 +88,27 @@ final storageBytesProvider = FutureProvider<int>((ref) {
   return ref.watch(documentRepositoryProvider).storageBytes();
 });
 
+final expiryDocumentsProvider = StreamProvider<List<DocumentListItem>>((ref) {
+  return ref.watch(documentRepositoryProvider).watchAll().map((items) {
+    final withExpiry =
+        items.where((item) => item.document.expiresAt != null).toList();
+    withExpiry.sort((a, b) {
+      final aDate = a.document.expiresAt!;
+      final bDate = b.document.expiresAt!;
+      return aDate.compareTo(bDate);
+    });
+    return withExpiry;
+  });
+});
+
 final documentBytesProvider =
-    FutureProvider.family<Uint8List, Document>((ref, document) {
-  return ref.watch(documentRepositoryProvider).readFile(document);
+    FutureProvider.family<Uint8List, String>((ref, id) async {
+  final repo = ref.watch(documentRepositoryProvider);
+  final document = await repo.getById(id);
+  if (document == null) {
+    throw StateError('Document not found.');
+  }
+  return repo.readFile(document);
 });
 
 final thumbnailBytesProvider =

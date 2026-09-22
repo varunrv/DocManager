@@ -6,6 +6,14 @@ bool isImageMime(String mimeType) => mimeType.toLowerCase().startsWith('image/')
 
 bool isPdfMime(String mimeType) => mimeType.toLowerCase() == 'application/pdf';
 
+/// Typed notes created in-app (editable as text).
+bool isPlainTextMime(String mimeType) =>
+    mimeType.toLowerCase() == 'text/plain';
+
+/// Any text/* type — used for preview only, not for edit-as-note mode.
+bool isTextMime(String mimeType) =>
+    mimeType.toLowerCase().startsWith('text/');
+
 String guessMimeType(String fileName, String? reported) {
   final value = reported?.trim();
   if (value != null && value.isNotEmpty && value != 'application/octet-stream') {
@@ -26,6 +34,8 @@ MimeType saverMimeType(String mimeType) {
       return MimeType.webp;
     case 'image/gif':
       return MimeType.gif;
+    case 'text/plain':
+      return MimeType.text;
     default:
       return MimeType.other;
   }
