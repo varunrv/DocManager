@@ -979,6 +979,21 @@ class $DocumentsTable extends Documents
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _reminderEnabledMeta = const VerificationMeta(
+    'reminderEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> reminderEnabled = GeneratedColumn<bool>(
+    'reminder_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("reminder_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1015,6 +1030,7 @@ class $DocumentsTable extends Documents
     storageKey,
     thumbnailKey,
     expiresAt,
+    reminderEnabled,
     createdAt,
     updatedAt,
   ];
@@ -1121,6 +1137,15 @@ class $DocumentsTable extends Documents
         expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
       );
     }
+    if (data.containsKey('reminder_enabled')) {
+      context.handle(
+        _reminderEnabledMeta,
+        reminderEnabled.isAcceptableOrUnknown(
+          data['reminder_enabled']!,
+          _reminderEnabledMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1194,6 +1219,10 @@ class $DocumentsTable extends Documents
         DriftSqlType.dateTime,
         data['${effectivePrefix}expires_at'],
       ),
+      reminderEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}reminder_enabled'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1224,6 +1253,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
   final String storageKey;
   final String? thumbnailKey;
   final DateTime? expiresAt;
+  final bool reminderEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
   const DocumentRow({
@@ -1239,6 +1269,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
     required this.storageKey,
     this.thumbnailKey,
     this.expiresAt,
+    required this.reminderEnabled,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1261,6 +1292,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
     if (!nullToAbsent || expiresAt != null) {
       map['expires_at'] = Variable<DateTime>(expiresAt);
     }
+    map['reminder_enabled'] = Variable<bool>(reminderEnabled);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1284,6 +1316,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
       expiresAt: expiresAt == null && nullToAbsent
           ? const Value.absent()
           : Value(expiresAt),
+      reminderEnabled: Value(reminderEnabled),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1307,6 +1340,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
       storageKey: serializer.fromJson<String>(json['storageKey']),
       thumbnailKey: serializer.fromJson<String?>(json['thumbnailKey']),
       expiresAt: serializer.fromJson<DateTime?>(json['expiresAt']),
+      reminderEnabled: serializer.fromJson<bool>(json['reminderEnabled']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1327,6 +1361,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
       'storageKey': serializer.toJson<String>(storageKey),
       'thumbnailKey': serializer.toJson<String?>(thumbnailKey),
       'expiresAt': serializer.toJson<DateTime?>(expiresAt),
+      'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1345,6 +1380,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
     String? storageKey,
     Value<String?> thumbnailKey = const Value.absent(),
     Value<DateTime?> expiresAt = const Value.absent(),
+    bool? reminderEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => DocumentRow(
@@ -1360,6 +1396,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
     storageKey: storageKey ?? this.storageKey,
     thumbnailKey: thumbnailKey.present ? thumbnailKey.value : this.thumbnailKey,
     expiresAt: expiresAt.present ? expiresAt.value : this.expiresAt,
+    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1385,6 +1422,9 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
           ? data.thumbnailKey.value
           : this.thumbnailKey,
       expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      reminderEnabled: data.reminderEnabled.present
+          ? data.reminderEnabled.value
+          : this.reminderEnabled,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1405,6 +1445,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
           ..write('storageKey: $storageKey, ')
           ..write('thumbnailKey: $thumbnailKey, ')
           ..write('expiresAt: $expiresAt, ')
+          ..write('reminderEnabled: $reminderEnabled, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1425,6 +1466,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
     storageKey,
     thumbnailKey,
     expiresAt,
+    reminderEnabled,
     createdAt,
     updatedAt,
   );
@@ -1444,6 +1486,7 @@ class DocumentRow extends DataClass implements Insertable<DocumentRow> {
           other.storageKey == this.storageKey &&
           other.thumbnailKey == this.thumbnailKey &&
           other.expiresAt == this.expiresAt &&
+          other.reminderEnabled == this.reminderEnabled &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1461,6 +1504,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
   final Value<String> storageKey;
   final Value<String?> thumbnailKey;
   final Value<DateTime?> expiresAt;
+  final Value<bool> reminderEnabled;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1477,6 +1521,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
     this.storageKey = const Value.absent(),
     this.thumbnailKey = const Value.absent(),
     this.expiresAt = const Value.absent(),
+    this.reminderEnabled = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1494,6 +1539,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
     required String storageKey,
     this.thumbnailKey = const Value.absent(),
     this.expiresAt = const Value.absent(),
+    this.reminderEnabled = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1520,6 +1566,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
     Expression<String>? storageKey,
     Expression<String>? thumbnailKey,
     Expression<DateTime>? expiresAt,
+    Expression<bool>? reminderEnabled,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1537,6 +1584,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
       if (storageKey != null) 'storage_key': storageKey,
       if (thumbnailKey != null) 'thumbnail_key': thumbnailKey,
       if (expiresAt != null) 'expires_at': expiresAt,
+      if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1556,6 +1604,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
     Value<String>? storageKey,
     Value<String?>? thumbnailKey,
     Value<DateTime?>? expiresAt,
+    Value<bool>? reminderEnabled,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1573,6 +1622,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
       storageKey: storageKey ?? this.storageKey,
       thumbnailKey: thumbnailKey ?? this.thumbnailKey,
       expiresAt: expiresAt ?? this.expiresAt,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1618,6 +1668,9 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
     if (expiresAt.present) {
       map['expires_at'] = Variable<DateTime>(expiresAt.value);
     }
+    if (reminderEnabled.present) {
+      map['reminder_enabled'] = Variable<bool>(reminderEnabled.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1645,6 +1698,7 @@ class DocumentsCompanion extends UpdateCompanion<DocumentRow> {
           ..write('storageKey: $storageKey, ')
           ..write('thumbnailKey: $thumbnailKey, ')
           ..write('expiresAt: $expiresAt, ')
+          ..write('reminderEnabled: $reminderEnabled, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2319,6 +2373,7 @@ typedef $$DocumentsTableCreateCompanionBuilder = DocumentsCompanion Function({
   required String storageKey,
   Value<String?> thumbnailKey,
   Value<DateTime?> expiresAt,
+  Value<bool> reminderEnabled,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -2336,6 +2391,7 @@ typedef $$DocumentsTableUpdateCompanionBuilder = DocumentsCompanion Function({
   Value<String> storageKey,
   Value<String?> thumbnailKey,
   Value<DateTime?> expiresAt,
+  Value<bool> reminderEnabled,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -2436,6 +2492,11 @@ class $$DocumentsTableFilterComposer
 
   ColumnFilters<DateTime> get expiresAt => $composableBuilder(
     column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2555,6 +2616,11 @@ class $$DocumentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2657,6 +2723,11 @@ class $$DocumentsTableAnnotationComposer
   GeneratedColumn<DateTime> get expiresAt =>
       $composableBuilder(column: $table.expiresAt, builder: (column) => column);
 
+  GeneratedColumn<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -2750,6 +2821,7 @@ class $$DocumentsTableTableManager
                 Value<String> storageKey = const Value.absent(),
                 Value<String?> thumbnailKey = const Value.absent(),
                 Value<DateTime?> expiresAt = const Value.absent(),
+                Value<bool> reminderEnabled = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2766,6 +2838,7 @@ class $$DocumentsTableTableManager
                 storageKey: storageKey,
                 thumbnailKey: thumbnailKey,
                 expiresAt: expiresAt,
+                reminderEnabled: reminderEnabled,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -2784,6 +2857,7 @@ class $$DocumentsTableTableManager
                 required String storageKey,
                 Value<String?> thumbnailKey = const Value.absent(),
                 Value<DateTime?> expiresAt = const Value.absent(),
+                Value<bool> reminderEnabled = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -2800,6 +2874,7 @@ class $$DocumentsTableTableManager
                 storageKey: storageKey,
                 thumbnailKey: thumbnailKey,
                 expiresAt: expiresAt,
+                reminderEnabled: reminderEnabled,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

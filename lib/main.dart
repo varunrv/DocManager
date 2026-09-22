@@ -5,13 +5,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/splash_gate.dart';
+import 'core/database/app_database.dart';
 import 'core/providers.dart';
+import 'core/storage/file_store.dart';
 import 'features/settings/presentation/lock_providers.dart';
 
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   final prefs = await SharedPreferences.getInstance();
+  final plainStore = createFileStore();
+  final db = AppDatabase();
+  await initializeVaultStorage(
+    prefs: prefs,
+    db: db,
+    plainStore: plainStore,
+  );
+  db.close();
   runApp(
     ProviderScope(
       overrides: [

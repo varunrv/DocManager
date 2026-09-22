@@ -37,7 +37,7 @@ class DocumentCard extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
 
     Widget preview() {
-      final bytes = thumb?.valueOrNull;
+      final bytes = thumb?.value;
       if (bytes != null) {
         return Image.memory(bytes, fit: BoxFit.cover);
       }

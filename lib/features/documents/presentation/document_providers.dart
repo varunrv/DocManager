@@ -88,6 +88,19 @@ final storageBytesProvider = FutureProvider<int>((ref) {
   return ref.watch(documentRepositoryProvider).storageBytes();
 });
 
+final expiryDocumentsProvider = StreamProvider<List<DocumentListItem>>((ref) {
+  return ref.watch(documentRepositoryProvider).watchAll().map((items) {
+    final withExpiry =
+        items.where((item) => item.document.expiresAt != null).toList();
+    withExpiry.sort((a, b) {
+      final aDate = a.document.expiresAt!;
+      final bDate = b.document.expiresAt!;
+      return aDate.compareTo(bDate);
+    });
+    return withExpiry;
+  });
+});
+
 final documentBytesProvider =
     FutureProvider.family<Uint8List, String>((ref, id) async {
   final repo = ref.watch(documentRepositoryProvider);

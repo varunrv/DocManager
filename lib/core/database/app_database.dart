@@ -50,6 +50,8 @@ class Documents extends Table {
   TextColumn get storageKey => text()();
   TextColumn get thumbnailKey => text().nullable()();
   DateTimeColumn get expiresAt => dateTime().nullable()();
+  BoolColumn get reminderEnabled =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -63,13 +65,21 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'docket'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (migrator) async {
           await migrator.createAll();
           await _seed();
+        },
+        onUpgrade: (migrator, from, to) async {
+          if (from < 2) {
+            await migrator.addColumn(
+              documents,
+              documents.reminderEnabled,
+            );
+          }
         },
       );
 
@@ -146,6 +156,7 @@ domain.Document documentFromRow(DocumentRow row) {
     storageKey: row.storageKey,
     thumbnailKey: row.thumbnailKey,
     expiresAt: row.expiresAt,
+    reminderEnabled: row.reminderEnabled,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   );

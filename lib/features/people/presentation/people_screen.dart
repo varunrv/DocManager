@@ -51,7 +51,7 @@ class _PersonTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = (ref.watch(allDocumentsProvider).valueOrNull ?? const [])
+    final count = (ref.watch(allDocumentsProvider).value ?? const [])
         .where((item) => item.document.personId == person.id)
         .length;
     return Card(

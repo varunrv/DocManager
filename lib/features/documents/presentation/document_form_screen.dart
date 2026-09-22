@@ -17,12 +17,14 @@ import '../../people/presentation/people_providers.dart';
 import '../../people/presentation/person_editor.dart';
 import '../../settings/presentation/lock_providers.dart';
 import '../domain/document.dart';
+import '../domain/quick_add_template.dart';
 import 'document_providers.dart';
 
 class DocumentFormScreen extends ConsumerStatefulWidget {
-  const DocumentFormScreen({super.key, this.documentId});
+  const DocumentFormScreen({super.key, this.documentId, this.templateId});
 
   final String? documentId;
+  final String? templateId;
 
   @override
   ConsumerState<DocumentFormScreen> createState() => _DocumentFormScreenState();
@@ -81,6 +83,13 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
               await ref.read(documentRepositoryProvider).readFile(existing);
           _textController.text = utf8.decode(bytes, allowMalformed: true);
         }
+      }
+    } else {
+      final template = quickAddTemplateById(widget.templateId);
+      if (template != null) {
+        _titleController.text = template.title;
+        categoryId = template.categoryId;
+        _tagsController.text = tagsToInput(template.tags);
       }
     }
 
@@ -314,8 +323,8 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final people = ref.watch(peopleProvider).valueOrNull ?? const [];
-    final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
+    final people = ref.watch(peopleProvider).value ?? const [];
+    final categories = ref.watch(categoriesProvider).value ?? const [];
 
     return Scaffold(
       appBar: AppBar(

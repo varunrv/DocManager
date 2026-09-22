@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
@@ -56,6 +58,13 @@ class DocumentRepository {
         return haystack.contains(search);
       }).toList();
     });
+  }
+
+  Future<List<Document>> getAll() async {
+    final rows = await (_db.select(_db.documents)
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.updatedAt)]))
+        .get();
+    return rows.map(documentFromRow).toList();
   }
 
   Future<Document?> getById(String id) async {
@@ -127,6 +136,7 @@ class DocumentRepository {
     required List<String> tags,
     required String notes,
     DateTime? expiresAt,
+    bool? reminderEnabled,
     String? originalFileName,
     String? mimeType,
     Uint8List? bytes,
@@ -148,6 +158,9 @@ class DocumentRepository {
         tagsJson: Value(tagsToJson(tags)),
         notes: Value(notes.trim()),
         expiresAt: Value(expiresAt),
+        reminderEnabled: reminderEnabled != null
+            ? Value(reminderEnabled)
+            : const Value.absent(),
         originalFileName: originalFileName != null
             ? Value(originalFileName)
             : const Value.absent(),
@@ -159,6 +172,48 @@ class DocumentRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  Future<void> updateReminderEnabled(String id, bool enabled) async {
+    final existing = await getById(id);
+    if (existing == null) {
+      throw const AppException('Document not found.');
+    }
+    await (_db.update(_db.documents)..where((tbl) => tbl.id.equals(id))).write(
+      DocumentsCompanion(
+        reminderEnabled: Value(enabled),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<int> deleteMany(Iterable<String> ids) async {
+    var deleted = 0;
+    for (final id in ids) {
+      try {
+        await delete(id);
+        deleted++;
+      } catch (_) {}
+    }
+    return deleted;
+  }
+
+  Future<int> updatePersonIdMany(Iterable<String> ids, String personId) async {
+    final idList = ids.toList();
+    if (idList.isEmpty) return 0;
+
+    final now = DateTime.now();
+    final updated = await (_db.update(_db.documents)
+          ..where(
+            (tbl) => tbl.id.isIn(idList) & tbl.personId.equals(personId).not(),
+          ))
+        .write(
+      DocumentsCompanion(
+        personId: Value(personId),
+        updatedAt: Value(now),
+      ),
+    );
+    return updated;
   }
 
   Future<void> delete(String id) async {

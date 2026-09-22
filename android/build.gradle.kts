@@ -5,6 +5,16 @@ allprojects {
     }
 }
 
+val androidCompileSdk = 36
+
+subprojects {
+    afterEvaluate {
+        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
+            compileSdkVersion(androidCompileSdk)
+        }
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

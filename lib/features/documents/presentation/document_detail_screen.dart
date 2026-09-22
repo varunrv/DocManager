@@ -110,11 +110,11 @@ class DocumentDetailScreen extends ConsumerWidget {
                           if (!kIsWeb)
                             Expanded(
                               child: FilledButton.icon(
-                                onPressed: bytesAsync.valueOrNull == null
+                                onPressed: bytesAsync.value == null
                                     ? null
                                     : () => shareDocument(
                                           data.document,
-                                          bytesAsync.valueOrNull!,
+                                          bytesAsync.value!,
                                         ),
                                 icon: const Icon(Icons.ios_share),
                                 label: const Text('Share'),
@@ -124,21 +124,21 @@ class DocumentDetailScreen extends ConsumerWidget {
                           Expanded(
                             child: kIsWeb
                                 ? FilledButton.icon(
-                                    onPressed: bytesAsync.valueOrNull == null
+                                    onPressed: bytesAsync.value == null
                                         ? null
                                         : () => downloadDocument(
                                               data.document,
-                                              bytesAsync.valueOrNull!,
+                                              bytesAsync.value!,
                                             ),
                                     icon: const Icon(Icons.download),
                                     label: const Text('Download'),
                                   )
                                 : OutlinedButton.icon(
-                                    onPressed: bytesAsync.valueOrNull == null
+                                    onPressed: bytesAsync.value == null
                                         ? null
                                         : () => downloadDocument(
                                               data.document,
-                                              bytesAsync.valueOrNull!,
+                                              bytesAsync.value!,
                                             ),
                                     icon: const Icon(Icons.download),
                                     label: const Text('Download'),
